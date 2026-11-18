@@ -146,6 +146,7 @@ section + section{margin-top:2rem}
         <a href="#tapas">Tapas e dolci</a>
         <a href="#degustazione">Degustazione</a>
         <a href="#vini">Vini al calice</a>
+        <a href="#bevande">Bevande</a>
       </nav>
     </div>
     <section id="tapas" aria-label="Tapas e dolci">
@@ -285,6 +286,30 @@ section + section{margin-top:2rem}
 </details>
 </div>
 </section>
+    <section class="drinks" id="bevande" aria-label="Bevande, birre, cocktail e distillati">
+      <div class="group" data-menu-section="BEVANDE"><h2>BEVANDE</h2>
+        <ul>
+          <li><div class="item"><span>Acqua naturale</span><span class="price">€1,50</span></div></li>
+          <li><div class="item"><span>Acqua frizzante</span><span class="price">€1,50</span></div></li>
+          <li><div class="item"><span>Coca zero</span><span class="price">€2,50</span></div></li>
+          <li><div class="item"><span>Coca cola</span><span class="price">€2,50</span></div></li>
+          <li><div class="item"><span>Campari soda</span><span class="price">€3,00</span></div></li>
+          <li><div class="item"><span>Ginger beer</span><span class="price">€3,00</span></div></li>
+          <li><div class="item"><span>Tonica indian</span><span class="price">€3,00</span></div></li>
+        </ul>
+      </div>
+      <div class="group" data-menu-section="BIRRE"><h2>BIRRE</h2>
+        <ul>
+          <li><div class="item"><span>LOWENBRAU</span><span class="price">€3,00</span></div></li>
+          <li><div class="item"><span>UILTJE IPA</span><span class="price">€6,00</span></div></li>
+          <li><div class="item"><span>ALLA CECA</span><span class="price">€6,00</span></div></li>
+        </ul>
+      </div>
+      <div class="group" data-menu-section="COCKTAIL"><h2>COCKTAIL</h2>
+      </div>
+      <div class="group" data-menu-section="DISTILLATI"><h2>DISTILLATI</h2>
+      </div>
+    </section>
   </main>
 </div>
 <script>
@@ -332,7 +357,9 @@ function readMenu(text, sections) {
   const items = new Map(sections.map(section => [section, []]));
   for (const row of rows) {
     const [section, category, name, description, price, available] = indexes.map(index => row[index] ?? '');
-    if (!items.has(section) || !name) throw new Error('Riga del menù non valida');
+    if (!items.has(section)) throw new Error('Sezione del menù non valida');
+    if (!name && !category && !description && !price && !available) continue;
+    if (!name) throw new Error('Riga del menù non valida');
     if (!['no', 'false', '0'].includes(available.toLowerCase())) {
       items.get(section).push({category, name, description, price});
     }
@@ -349,7 +376,9 @@ function element(tag, text, className) {
   return node;
 }
 
-function makeList(items) {
+const drinksPriceFormat = new Intl.NumberFormat('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+function makeList(items, format = priceFormat) {
   const list = element('ul');
   for (const {name, description, price} of items) {
     const item = element('li');
@@ -359,7 +388,7 @@ function makeList(items) {
       const cleaned = price.replace(/[€\s]/g, '');
       const numeric = Number(cleaned.includes(',') ? cleaned.replace(/\./g, '').replace(',', '.') : cleaned);
       if (cleaned && Number.isFinite(numeric) && numeric >= 0) {
-        line.append(element('span', '€' + priceFormat.format(numeric), 'price'));
+        line.append(element('span', '€' + format.format(numeric), 'price'));
       }
     }
     item.append(line);
@@ -393,7 +422,8 @@ async function updateMenu() {
     const items = menu.get(target.dataset.menuSection);
     const wines = target.classList.contains('wine-format');
     const old = [...target.children].filter(node => node.matches(wines ? 'details' : 'ul'));
-    const fresh = wines ? makeWineGroups(target, items) : [makeList(items)];
+    const format = target.closest('.drinks') ? drinksPriceFormat : priceFormat;
+    const fresh = wines ? makeWineGroups(target, items) : [makeList(items, format)];
     return {target, old, fresh};
   });
   for (const {target, old, fresh} of updates) {
